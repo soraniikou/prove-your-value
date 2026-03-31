@@ -301,7 +301,7 @@ export default function App() {
       )}
       {screen === 'weight' && (
         <div className="screen">
-          <h1>今日の自分の<br />重さを教えてください</h1>
+          <h1>今の自分の<br />重さを教えてください</h1>
           <p className="sub">how heavy do you feel today</p>
           <div className="weight-display" style={{ color: `hsl(${200+weight*5},70%,68%)`, textShadow: `0 0 40px hsla(${200+weight*5},70%,68%,0.5)` }}>{weight}</div>
           <input type="range" min={1} max={10} value={weight} onChange={e => setWeight(Number(e.target.value))} />
@@ -330,7 +330,7 @@ export default function App() {
       )}
       {screen === 'color' && (
         <div className="screen">
-          <h2>今日の色を選んでください</h2>
+          <h2>今の色を選んでください</h2>
           <p className="sub">choose the color of today</p>
           <div className="color-grid">
             {COLORS.map((c, i) => (
