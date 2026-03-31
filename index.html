@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prove Your Value</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Noto+Serif+JP:wght@200;300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #06080f;
+    --text: #dde4f0;
+    --accent: #7eb8e8;
+    --gold: #c8a882;
+    --dim: rgba(221,228,240,0.3);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', 'Noto Serif JP', serif;
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 30% 40%, rgba(60,80,160,0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 80% at 70% 70%, rgba(100,40,120,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse {
+    from { opacity: 0.6; }
+    to   { opacity: 1; }
+  }
+
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.9s ease;
+    padding: 2rem;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  /* ── S1: WEIGHT ── */
+  #s-weight h1 {
+    font-size: clamp(1.5rem, 4.5vw, 2.2rem);
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    text-align: center;
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+  }
+  .sub { font-size: 0.78rem; color: var(--dim); letter-spacing: 0.15em; margin-bottom: 3rem; text-align: center; }
+
+  .weight-display {
+    font-size: clamp(5rem, 18vw, 8rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 40px rgba(126,184,232,0.4);
+    transition: color 0.4s, text-shadow 0.4s;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: min(360px, 78vw);
+    height: 1px;
+    background: var(--dim);
+    outline: none;
+    margin-bottom: 3rem;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 16px rgba(126,184,232,0.7);
+    transition: transform 0.2s;
+  }
+  input[type=range]::-webkit-slider-thumb:active { transform: scale(1.5); }
+
+  /* ── S2: SOUND FEEL ── */
+  #s-feel h2, #s-color h2 {
+    font-size: clamp(1.1rem, 3.5vw, 1.7rem);
+    font-weight: 300;
+    letter-spacing: 0.16em;
+    margin-bottom: 0.4rem;
+    text-align: center;
+  }
+
+  .feel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+    width: min(380px, 88vw);
+    margin-bottom: 2.5rem;
+  }
+  .feel-card {
+    border: 1px solid rgba(221,228,240,0.15);
+    padding: 1rem 0.8rem;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    background: transparent;
+  }
+  .feel-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .feel-card.selected {
+    border-color: var(--accent);
+    background: rgba(126,184,232,0.08);
+    box-shadow: 0 0 20px rgba(126,184,232,0.15);
+  }
+  .feel-card .feel-icon { font-size: 1.4rem; margin-bottom: 0.4rem; }
+  .feel-card .feel-name { font-size: 0.72rem; letter-spacing: 0.15em; color: var(--dim); }
+  .feel-card.selected .feel-name { color: var(--accent); }
+
+  /* ── S3: COLOR ── */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .color-swatch {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.3s;
+  }
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.selected { border-color: white; transform: scale(1.22); }
+
+  /* ── S4: CANVAS ── */
+  #s-canvas { padding: 0; }
+  #drawing-canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+
+  #canvas-ui {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 2.5rem;
+  }
+  .hint {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: rgba(221,228,240,0.35);
+    text-align: center;
+    margin-bottom: auto;
+  }
+  #mic-ring {
+    position: fixed;
+    bottom: 5.5rem; left: 50%;
+    transform: translateX(-50%);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(126,184,232,0.25);
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
+    pointer-events: none;
+  }
+  #mic-ring.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(126,184,232,0.5);
+  }
+  .done-btn {
+    pointer-events: all;
+    background: transparent;
+    border: 1px solid rgba(221,228,240,0.25);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.76rem;
+    letter-spacing: 0.22em;
+    padding: 0.7rem 2.5rem;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .done-btn:hover { border-color: var(--accent); background: rgba(126,184,232,0.06); }
+
+  /* ── MUTE BUTTON ── */
+  #mute-btn {
+    position: fixed;
+    top: 1.2rem; right: 1.4rem;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    color: rgba(221,228,240,0.65);
+    cursor: pointer;
+    pointer-events: all;
+    transition: color 0.3s, opacity 0.3s;
+    z-index: 100;
+    background: none;
+    border: none;
+    line-height: 1;
+  }
+  #mute-btn:hover { color: rgba(221,228,240,0.6); }
+  #mute-btn.muted { color: rgba(126,184,232,0.5); }
+
+  /* ── S5: END ── */
+  #s-end {
+    background: radial-gradient(ellipse at 40% 50%, rgba(40,60,140,0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(80,20,100,0.2) 0%, transparent 60%);
+  }
+  .final-message {
+    font-size: clamp(1.4rem, 4.5vw, 2.1rem);
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.1em;
+    text-align: center;
+    line-height: 1.9;
+    white-space: pre-line;
+    opacity: 0;
+    animation: fadeUp 2s ease forwards 0.4s;
+  }
+  .final-sub {
+    font-size: 0.76rem;
+    color: var(--dim);
+    letter-spacing: 0.22em;
+    margin-top: 2rem;
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 2s ease forwards 1.6s;
+  }
+  .restart {
+    margin-top: 3rem;
+    background: transparent;
+    border: 1px solid rgba(221,228,240,0.18);
+    color: rgba(221,228,240,0.45);
+    font-family: inherit;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    padding: 0.6rem 2rem;
+    cursor: pointer;
+    opacity: 0;
+    animation: fadeUp 2s ease forwards 2.8s;
+    transition: border-color 0.3s, color 0.3s;
+  }
+  .restart:hover { border-color: var(--accent); color: var(--text); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .next-btn {
+    background: transparent;
+    border: 1px solid rgba(221,228,240,0.22);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.76rem;
+    letter-spacing: 0.25em;
+    padding: 0.75rem 3rem;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .next-btn:hover { border-color: var(--accent); background: rgba(126,184,232,0.06); }
+  .next-btn:disabled { opacity: 0.28; pointer-events: none; }
+
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+  .particle {
+    position: absolute; border-radius: 50%;
+    animation: floatUp 1.8s ease-out forwards;
+  }
+  @keyframes floatUp {
+    from { opacity: 0.9; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-100px) scale(0.1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- MUTE — 常に右上に浮いている、キャンバス画面のみ表示 -->
+<button id="mute-btn" style="display:none" aria-label="mute">♪</button>
+
+<!-- S1: WEIGHT -->
+<div class="screen" id="s-weight">
+  <h1>今日の自分の<br>重さを教えてください</h1>
+  <p class="sub">how heavy do you feel today</p>
+  <div class="weight-display" id="weight-num">5</div>
+  <input type="range" min="1" max="10" value="5" id="weight-slider">
+  <button class="next-btn" id="btn1">次へ</button>
+</div>
+
+<!-- S2: SOUND FEEL -->
+<div class="screen hidden" id="s-feel">
+  <h2>今日の音の質感は？</h2>
+  <p class="sub">choose your sound texture</p>
+  <div class="feel-grid">
+    <div class="feel-card" data-feel="crystal">
+      <div class="feel-icon">✦</div>
+      <div class="feel-name">クリスタル<br>crystal</div>
+    </div>
+    <div class="feel-card" data-feel="warm">
+      <div class="feel-icon">◎</div>
+      <div class="feel-name">温かい<br>warm</div>
+    </div>
+    <div class="feel-card" data-feel="electro">
+      <div class="feel-icon">⚡</div>
+      <div class="feel-name">エレクトロ<br>electro</div>
+    </div>
+    <div class="feel-card" data-feel="void">
+      <div class="feel-icon">◈</div>
+      <div class="feel-name">空間的<br>void</div>
+    </div>
+  </div>
+  <button class="next-btn" id="btn2" disabled>次へ</button>
+</div>
+
+<!-- S3: COLOR -->
+<div class="screen hidden" id="s-color">
+  <h2>今日の色を選んでください</h2>
+  <p class="sub">choose the color of today</p>
+  <div class="color-grid" id="color-grid"></div>
+  <button class="next-btn" id="btn3" disabled>次へ</button>
+</div>
+
+<!-- S4: CANVAS -->
+<div class="screen hidden" id="s-canvas">
+  <canvas id="drawing-canvas"></canvas>
+  <div id="canvas-ui">
+    <p class="hint">画面に描いてください　声も吹き込んでください<br>draw · speak · breathe</p>
+    <div id="mic-ring"></div>
+    <button class="done-btn" id="btn-done">完成させる</button>
+  </div>
+</div>
+
+<!-- S5: END -->
+<div class="screen hidden" id="s-end">
+  <div class="final-message" id="final-msg"></div>
+  <div class="final-sub">あなたはもう、証明した。<br>you have already proved your value.</div>
+  <button class="restart" id="btn-restart">もう一度 / again</button>
+</div>
+
+<div id="particles"></div>
+
+<script>
+// ── STATE ──
+let weight = 5;
+let chosenFeel = null;
+let chosenColor = null;
+let colorData = null;
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+let strokeCount = 0;
+let micStream = null, micAnalyser = null, micArray = null, micFrame = null;
+let isMuted = false;
+
+// ── COLORS ──
+const COLORS = [
+  { hex: '#5ba4d8', hue: 205 }, { hex: '#e88aaa', hue: 340 },
+  { hex: '#6abf8a', hue: 145 }, { hex: '#e89050', hue: 28 },
+  { hex: '#c8d8f0', hue: 215 }, { hex: '#9a72c8', hue: 268 },
+  { hex: '#d4c050', hue: 52 },  { hex: '#7899b0', hue: 205 },
+];
+
+// ── FEEL PRESETS ──
+const FEEL_PRESETS = {
+  crystal: {
+    padType: 'sine', padVolume: -10,
+    arpType: 'triangle', arpVolume: -8,
+    bassType: 'sawtooth', bassVolume: -22,
+    reverbDecay: 5, reverbWet: 0.65,
+    filterFreq: 3500, delayTime: '8n', delayFeedback: 0.25,
+    arpSpeed: '8n',
+  },
+  warm: {
+    padType: 'triangle', padVolume: -9,
+    arpType: 'sine', arpVolume: -12,
+    bassType: 'triangle', bassVolume: -18,
+    reverbDecay: 4, reverbWet: 0.5,
+    filterFreq: 1800, delayTime: '4n', delayFeedback: 0.2,
+    arpSpeed: '4n.',
+  },
+  electro: {
+    padType: 'sawtooth', padVolume: -14,
+    arpType: 'square', arpVolume: -10,
+    bassType: 'sawtooth', bassVolume: -16,
+    reverbDecay: 3, reverbWet: 0.4,
+    filterFreq: 2400, delayTime: '8n.', delayFeedback: 0.35,
+    arpSpeed: '16n',
+  },
+  void: {
+    padType: 'sine', padVolume: -8,
+    arpType: 'sine', arpVolume: -16,
+    bassType: 'sine', bassVolume: -24,
+    reverbDecay: 9, reverbWet: 0.8,
+    filterFreq: 900, delayTime: '2n', delayFeedback: 0.45,
+    arpSpeed: '4n.',
+  },
+};
+
+const MINOR_NOTES = ['A3','C4','D4','E4','G4','A4','C5','D5','E5','G5'];
+const MAJOR_NOTES = ['A3','C#4','E4','F#4','A4','C#5','E5','F#5','A5'];
+const BASS_MINOR  = ['A2','E2','D2','G2'];
+const BASS_MAJOR  = ['A2','E2','C#2','F#2'];
+
+// ── AUDIO NODES ──
+let masterGain, reverb, delay, limiter;
+let padSynth, arpSynth, bassSynth, bellSynth;
+let arpPattern = null;
+let synthPlaying = false;
+let transitioning = false;
+let ctx2d = null;
+let brushHue = 200;
+let padInterval = null, bassInterval = null;
+
+async function initAudio() {
+  await Tone.start();
+  Tone.Transport.bpm.value = getTempo();
+
+  const preset = FEEL_PRESETS[chosenFeel] || FEEL_PRESETS.electro;
+
+  limiter    = new Tone.Limiter(-2).toDestination();
+  reverb     = new Tone.Reverb({ decay: preset.reverbDecay, wet: preset.reverbWet }).connect(limiter);
+  delay      = new Tone.FeedbackDelay(preset.delayTime, preset.delayFeedback).connect(reverb);
+  masterGain = new Tone.Gain(1).connect(delay);
+
+  const filt = new Tone.Filter(preset.filterFreq, 'lowpass', -24).connect(masterGain);
+  window._filt = filt;
+
+  padSynth = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: preset.padType },
+    envelope: { attack: 1.2, decay: 0.5, sustain: 0.8, release: 3 },
+    volume: preset.padVolume,
+  }).connect(filt);
+
+  arpSynth = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: preset.arpType },
+    envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 1.2 },
+    volume: preset.arpVolume,
+  }).connect(filt);
+
+  bassSynth = new Tone.MonoSynth({
+    oscillator: { type: preset.bassType },
+    envelope: { attack: 0.05, decay: 0.4, sustain: 0.6, release: 1 },
+    filterEnvelope: { attack: 0.05, decay: 0.3, sustain: 0.5, release: 1, baseFrequency: 120, octaves: 2 },
+    volume: preset.bassVolume,
+  }).connect(limiter);
+
+  bellSynth = new Tone.MetalSynth({
+    frequency: 400,
+    envelope: { attack: 0.001, decay: 1.4, release: 0.2 },
+    harmonicity: 5.1,
+    modulationIndex: 32,
+    resonance: 4000,
+    octaves: 1.5,
+    volume: -28,
+  }).connect(reverb);
+}
+
+function getTempo() {
+  return Math.round(60 + (weight - 1) * (35 / 9));
+}
+
+function startMusic(major = false) {
+  if (synthPlaying) return;
+  synthPlaying = true;
+
+  const notes     = major ? MAJOR_NOTES : MINOR_NOTES;
+  const bassNotes = major ? BASS_MAJOR  : BASS_MINOR;
+
+  function playPad() {
+    if (isMuted) return;
+    const chord = [
+      notes[Math.floor(Math.random() * 5)],
+      notes[Math.floor(Math.random() * 5) + 4],
+    ];
+    padSynth.triggerAttackRelease(chord, major ? '1m' : '2n.');
+  }
+  playPad();
+  padInterval = setInterval(playPad, Tone.Time('1m').toMilliseconds());
+
+  let bassIdx = 0;
+  function playBass() {
+    if (isMuted) return;
+    bassSynth.triggerAttackRelease(bassNotes[bassIdx % bassNotes.length], '8n');
+    bassIdx++;
+  }
+  playBass();
+  bassInterval = setInterval(playBass, Tone.Time('4n').toMilliseconds());
+
+  const preset = FEEL_PRESETS[chosenFeel] || FEEL_PRESETS.electro;
+  arpPattern = new Tone.Pattern((time, note) => {
+    if (isMuted) return;
+    arpSynth.triggerAttackRelease(note, '16n', time, 0.5 + Math.random() * 0.3);
+  }, notes, 'upDown');
+  arpPattern.interval = preset.arpSpeed;
+  arpPattern.start(0);
+
+  Tone.Transport.start();
+}
+
+function stopMusic() {
+  clearInterval(padInterval);
+  clearInterval(bassInterval);
+  if (arpPattern) { arpPattern.stop(); arpPattern.dispose(); arpPattern = null; }
+  padSynth  && padSynth.releaseAll();
+  bassSynth && bassSynth.triggerRelease();
+  Tone.Transport.stop();
+  synthPlaying = false;
+}
+
+async function transitionToMajor() {
+  transitioning = true;
+  clearInterval(padInterval);
+  clearInterval(bassInterval);
+  if (arpPattern) { arpPattern.stop(); arpPattern.dispose(); arpPattern = null; }
+
+  if (!isMuted) {
+    if (window._filt) window._filt.frequency.rampTo(6000, 2.5);
+    padSynth.triggerAttackRelease(['A3','C#4','E4','A4','E5'], '1m');
+    bassSynth.triggerAttackRelease('A2', '2n');
+    setTimeout(() => bellSynth.triggerAttackRelease('8n'), 800);
+    setTimeout(() => bellSynth.triggerAttackRelease('8n'), 1400);
+    setTimeout(() => bellSynth.triggerAttackRelease('8n'), 2000);
+    await new Promise(r => setTimeout(r, 3500));
+  }
+
+  stopMusic();
+}
+
+// ── MUTE ──
+function toggleMute() {
+  isMuted = !isMuted;
+  const btn = document.getElementById('mute-btn');
+  if (isMuted) {
+    masterGain && masterGain.gain.rampTo(0, 0.3);
+    btn.textContent = '♪';
+    btn.classList.add('muted');
+    btn.style.opacity = '0.4';
+  } else {
+    masterGain && masterGain.gain.rampTo(1, 0.3);
+    btn.textContent = '♪';
+    btn.classList.remove('muted');
+    btn.style.opacity = '';
+  }
+}
+
+// ── MIC ──
+async function startMic() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const raw = Tone.getContext().rawContext;
+    const src = raw.createMediaStreamSource(micStream);
+    micAnalyser = raw.createAnalyser();
+    micAnalyser.fftSize = 256;
+    micArray = new Uint8Array(micAnalyser.frequencyBinCount);
+    src.connect(micAnalyser);
+    monitorMic();
+  } catch(e) { console.log('mic not available'); }
+}
+
+function monitorMic() {
+  const ring = document.getElementById('mic-ring');
+  function tick() {
+    micFrame = requestAnimationFrame(tick);
+    if (!micAnalyser || isMuted) return;
+    micAnalyser.getByteFrequencyData(micArray);
+    const avg = micArray.reduce((a,b) => a+b, 0) / micArray.length;
+    const level = avg / 128;
+    if (level > 0.06 && window._filt) {
+      window._filt.frequency.rampTo(1200 + level * 5000, 0.08);
+      ring.classList.add('active');
+      ring.style.transform = `translateX(-50%) scale(${1 + level})`;
+    } else {
+      ring.classList.remove('active');
+      ring.style.transform = `translateX(-50%) scale(1)`;
+    }
+  }
+  tick();
+}
+
+function stopMic() {
+  if (micFrame) cancelAnimationFrame(micFrame);
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+}
+
+// ── CANVAS ──
+function initCanvas() {
+  const canvas = document.getElementById('drawing-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx2d = canvas.getContext('2d');
+  ctx2d.fillStyle = '#06080f';
+  ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+  brushHue = colorData ? colorData.hue : 200;
+}
+
+function getPos(e) {
+  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+function drawStart(e) {
+  e.preventDefault();
+  isDrawing = true;
+  const { x, y } = getPos(e);
+  lastX = x; lastY = y;
+}
+
+function drawMove(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const { x, y } = getPos(e);
+  const dx = x - lastX, dy = y - lastY;
+  const speed = Math.sqrt(dx*dx + dy*dy);
+  const lightness = Math.min(78, 38 + speed * 1.1);
+  const alpha = Math.min(0.92, 0.35 + speed * 0.018);
+
+  ctx2d.beginPath();
+  ctx2d.moveTo(lastX, lastY);
+  ctx2d.lineTo(x, y);
+  ctx2d.strokeStyle = `hsla(${brushHue}, 75%, ${lightness}%, ${alpha})`;
+  ctx2d.lineWidth = Math.min(22, 3 + speed * 0.4);
+  ctx2d.lineCap = 'round'; ctx2d.lineJoin = 'round';
+  ctx2d.stroke();
+
+  // glow layer
+  ctx2d.beginPath();
+  ctx2d.moveTo(lastX, lastY);
+  ctx2d.lineTo(x, y);
+  ctx2d.strokeStyle = `hsla(${brushHue}, 90%, 80%, ${alpha * 0.18})`;
+  ctx2d.lineWidth = Math.min(40, 8 + speed * 0.8);
+  ctx2d.stroke();
+
+  lastX = x; lastY = y;
+  strokeCount++;
+
+  if (!isMuted && speed > 8 && arpSynth && strokeCount % 6 === 0) {
+    const note = MINOR_NOTES[Math.floor(Math.random() * MINOR_NOTES.length)];
+    arpSynth.triggerAttackRelease(note, '16n', undefined, 0.4);
+  }
+
+  if (Math.random() < 0.1) spawnParticle(x, y);
+}
+
+function drawEnd() { isDrawing = false; }
+
+function spawnParticle(x, y) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = 3 + Math.random() * 9;
+  p.style.cssText = `
+    left:${x - size/2}px; top:${y - size/2}px;
+    width:${size}px; height:${size}px;
+    background: hsla(${brushHue}, 85%, 72%, 0.8);
+    animation-duration: ${1 + Math.random() * 1.2}s;
+  `;
+  document.getElementById('particles').appendChild(p);
+  setTimeout(() => p.remove(), 2300);
+}
+
+// ── MESSAGES ──
+function getFinalMessage(w) {
+  if (w <= 3) return 'その重さも、\nあなたの音になった。';
+  if (w <= 6) return 'ゆっくりでいい。\nそれでも、あなたは動いている。';
+  return '重いほど、\n根は深く張っていく。';
+}
+
+// ── NAV ──
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function resetAll() {
+  weight = 5; chosenFeel = null; chosenColor = null; colorData = null;
+  strokeCount = 0; synthPlaying = false; transitioning = false; isMuted = false;
+  document.getElementById('weight-slider').value = 5;
+  document.getElementById('weight-num').textContent = '5';
+  document.getElementById('weight-num').style.cssText = '';
+  document.querySelectorAll('.feel-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.color-swatch').forEach(s => { s.classList.remove('selected'); s.style.boxShadow = ''; });
+  document.getElementById('btn2').disabled = true;
+  document.getElementById('btn3').disabled = true;
+  document.getElementById('canvas-ui').style.display = '';
+  document.getElementById('drawing-canvas').style.pointerEvents = '';
+  document.getElementById('particles').innerHTML = '';
+  document.getElementById('mute-btn').style.display = 'none';
+  const muteBtn = document.getElementById('mute-btn');
+  muteBtn.textContent = '♪';
+  muteBtn.classList.remove('muted');
+  muteBtn.style.opacity = '';
+  show('s-weight');
+}
+
+// ── BOOT ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Weight
+  const slider = document.getElementById('weight-slider');
+  const numEl  = document.getElementById('weight-num');
+  slider.addEventListener('input', () => {
+    weight = parseInt(slider.value);
+    numEl.textContent = weight;
+    const hue = 200 + weight * 5;
+    numEl.style.color = `hsl(${hue}, 70%, 68%)`;
+    numEl.style.textShadow = `0 0 40px hsla(${hue}, 70%, 68%, 0.5)`;
+  });
+
+  // Feel cards
+  document.querySelectorAll('.feel-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.feel-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      chosenFeel = card.dataset.feel;
+      document.getElementById('btn2').disabled = false;
+    });
+  });
+
+  // Color swatches
+  COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch';
+    sw.style.background = c.hex;
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(s => { s.classList.remove('selected'); s.style.boxShadow = ''; });
+      sw.classList.add('selected');
+      sw.style.boxShadow = `0 0 22px ${c.hex}`;
+      chosenColor = c.hex;
+      colorData = c;
+      document.getElementById('btn3').disabled = false;
+    });
+    document.getElementById('color-grid').appendChild(sw);
+  });
+
+  // Mute button
+  document.getElementById('mute-btn').addEventListener('click', toggleMute);
+
+  // Nav
+  document.getElementById('btn1').addEventListener('click', () => show('s-feel'));
+  document.getElementById('btn2').addEventListener('click', () => show('s-color'));
+
+  document.getElementById('btn3').addEventListener('click', async () => {
+    show('s-canvas');
+    document.getElementById('mute-btn').style.display = 'flex';
+    await initAudio();
+    initCanvas();
+
+    const canvas = document.getElementById('drawing-canvas');
+    canvas.addEventListener('mousedown', drawStart);
+    canvas.addEventListener('mousemove', drawMove);
+    canvas.addEventListener('mouseup', drawEnd);
+    canvas.addEventListener('mouseleave', drawEnd);
+    canvas.addEventListener('touchstart', drawStart, { passive: false });
+    canvas.addEventListener('touchmove',  drawMove,  { passive: false });
+    canvas.addEventListener('touchend', drawEnd);
+
+    startMusic(false);
+    await startMic();
+  });
+
+  document.getElementById('btn-done').addEventListener('click', async () => {
+    document.getElementById('drawing-canvas').style.pointerEvents = 'none';
+    document.getElementById('canvas-ui').style.display = 'none';
+    document.getElementById('mute-btn').style.display = 'none';
+    stopMic();
+    await transitionToMajor();
+    document.getElementById('final-msg').textContent = getFinalMessage(weight);
+    show('s-end');
+  });
+
+  document.getElementById('btn-restart').addEventListener('click', resetAll);
+});
+</script>
+</body>
+</html>
